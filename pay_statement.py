@@ -16,11 +16,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib import colors
 
-# 상위 디렉토리 경로 추가
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# 임금대장 클래스 임포트
-from payroll_ledger.payroll_ledger import PayrollLedger
+# 임금대장 클래스 임포트 (수정됨)
+from payroll_ledger import PayrollLedger
 
 class PayStatement:
     """
@@ -54,7 +51,7 @@ class PayStatement:
             self.font_name = 'WenQuanYiZenHei'
         else:
             # 폰트 파일이 없는 경우 다운로드
-            font_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static/fonts")
+            font_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static/fonts")
             os.makedirs(font_dir, exist_ok=True)
             
             # NanumGothic 폰트 다운로드 (없는 경우)
