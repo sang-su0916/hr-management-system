@@ -202,34 +202,34 @@ class EmploymentContract:
     
     def _register_korean_fonts(self):
         """한글 폰트 등록"""
-        # 시스템에 설치된 CJK 폰트 사용
-        noto_font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-        wqy_font_path = "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"
-        
-        # 폰트 등록
-        if os.path.exists(noto_font_path):
-            pdfmetrics.registerFont(TTFont('NotoSansCJK', noto_font_path))
-            font_name = 'NotoSansCJK'
-        elif os.path.exists(wqy_font_path):
-            pdfmetrics.registerFont(TTFont('WenQuanYiZenHei', wqy_font_path))
-            font_name = 'WenQuanYiZenHei'
-        else:
-            # 폰트 파일이 없는 경우 다운로드
-            font_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static/fonts")
-            os.makedirs(font_dir, exist_ok=True)
+        # 시스템에 설치된 CJK 폰트 검색
+        try:
+            # 기본 폰트 목록
+            font_paths = [
+                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+                "/usr/share/fonts/truetype/unbatang/UnBatang.ttf",
+                "/usr/share/fonts/open-sans/OpenSans-Regular.ttf"
+            ]
             
-            # NanumGothic 폰트 다운로드 (없는 경우)
-            nanum_font_path = os.path.join(font_dir, "NanumGothic.ttf")
-            if not os.path.exists(nanum_font_path):
-                import urllib.request
-                urllib.request.urlretrieve(
-                    "https://github.com/naver/nanumfont/raw/master/NanumGothic.ttf",
-                    nanum_font_path
-                )
+            # 폰트 찾기 및 등록
+            font_found = False
+            for font_path in font_paths:
+                if os.path.exists(font_path):
+                    font_name = os.path.basename(font_path).split('.')[0]
+                    pdfmetrics.registerFont(TTFont(font_name, font_path))
+                    font_found = True
+                    break
             
-            # 폰트 등록
-            pdfmetrics.registerFont(TTFont('NanumGothic', nanum_font_path))
-            font_name = 'NanumGothic'
+            # 폰트를 찾지 못한 경우 기본 폰트 사용
+            if not font_found:
+                # Helvetica는 ReportLab에 기본으로 내장되어 있음
+                # 한글이 제대로 표시되지 않을 수 있지만 오류는 방지
+                pass
+        except Exception as e:
+            st.warning(f"폰트 등록 중 오류가 발생했습니다: {e}")
+            st.warning("한글이 제대로 표시되지 않을 수 있습니다.")
     
     def generate_contract_pdf(self, contract_data):
         """
@@ -257,14 +257,14 @@ class EmploymentContract:
         styles = getSampleStyleSheet()
         styles.add(ParagraphStyle(
             name='Korean',
-            fontName='NanumGothic',
+            fontName='Helvetica',  # 기본 폰트 사용
             fontSize=10,
             leading=14,
             alignment=TA_JUSTIFY
         ))
         styles.add(ParagraphStyle(
             name='KoreanTitle',
-            fontName='NanumGothic',
+            fontName='Helvetica',  # 기본 폰트 사용
             fontSize=16,
             leading=20,
             alignment=TA_CENTER,
@@ -272,7 +272,7 @@ class EmploymentContract:
         ))
         styles.add(ParagraphStyle(
             name='KoreanSubtitle',
-            fontName='NanumGothic',
+            fontName='Helvetica',  # 기본 폰트 사용
             fontSize=12,
             leading=16,
             alignment=TA_LEFT,
