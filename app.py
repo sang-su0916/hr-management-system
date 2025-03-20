@@ -8,7 +8,7 @@ import base64
 # 모듈 경로 추가
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# 각 모듈 임포트 (파일 구조에 맞게 수정됨)
+# 각 모듈 임포트 (평평한 구조에 맞게 수정됨)
 from annual_leave_ui import render_annual_leave_calculator
 from employment_contract import render_employment_contract_form
 from payroll_ledger import render_payroll_ledger_ui
@@ -238,12 +238,12 @@ def main():
     # CSS 스타일 적용
     load_css()
     
-    # 배경 이미지 설정
+    # 배경 이미지 설정 (에러 핸들링 추가)
     try:
         bg_image_path = create_background_image()
         add_bg_from_local(bg_image_path)
     except Exception as e:
-        st.warning(f"배경 이미지 생성 중 오류가 발생했습니다. 하지만 앱은 계속 작동합니다.")
+        pass  # 배경 이미지 없이도 계속 실행
     
     # 세션 상태 초기화
     if 'current_page' not in st.session_state:
