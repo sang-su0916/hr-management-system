@@ -38,34 +38,34 @@ class PayStatement:
     
     def _register_korean_fonts(self):
         """한글 폰트 등록"""
-        # 시스템에 설치된 CJK 폰트 사용
-        noto_font_path = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-        wqy_font_path = "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"
-        
-        # 폰트 등록
-        if os.path.exists(noto_font_path):
-            pdfmetrics.registerFont(TTFont('NotoSansCJK', noto_font_path))
-            self.font_name = 'NotoSansCJK'
-        elif os.path.exists(wqy_font_path):
-            pdfmetrics.registerFont(TTFont('WenQuanYiZenHei', wqy_font_path))
-            self.font_name = 'WenQuanYiZenHei'
-        else:
-            # 폰트 파일이 없는 경우 다운로드
-            font_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static/fonts")
-            os.makedirs(font_dir, exist_ok=True)
+        try:
+            # 기본 폰트 목록
+            font_paths = [
+                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+                "/usr/share/fonts/truetype/unbatang/UnBatang.ttf",
+                "/usr/share/fonts/open-sans/OpenSans-Regular.ttf"
+            ]
             
-            # NanumGothic 폰트 다운로드 (없는 경우)
-            nanum_font_path = os.path.join(font_dir, "NanumGothic.ttf")
-            if not os.path.exists(nanum_font_path):
-                import urllib.request
-                urllib.request.urlretrieve(
-                    "https://github.com/naver/nanumfont/raw/master/NanumGothic.ttf",
-                    nanum_font_path
-                )
+            # 폰트 찾기 및 등록
+            font_found = False
+            for font_path in font_paths:
+                if os.path.exists(font_path):
+                    font_name = os.path.basename(font_path).split('.')[0]
+                    pdfmetrics.registerFont(TTFont(font_name, font_path))
+                    self.font_name = font_name
+                    font_found = True
+                    break
             
-            # 폰트 등록
-            pdfmetrics.registerFont(TTFont('NanumGothic', nanum_font_path))
-            self.font_name = 'NanumGothic'
+            # 폰트를 찾지 못한 경우 기본 폰트 사용
+            if not font_found:
+                # Helvetica는 ReportLab에 기본으로 내장되어 있음
+                self.font_name = 'Helvetica'
+        except Exception as e:
+            st.warning(f"폰트 등록 중 오류가 발생했습니다: {e}")
+            st.warning("한글이 제대로 표시되지 않을 수 있습니다.")
+            self.font_name = 'Helvetica'
     
     def generate_pay_statement_pdf(self, ledger_id):
         """
@@ -291,28 +291,35 @@ class PayStatement:
             return self.generate_pay_statement_pdf(ledger_ids[0])
         
         # 여러 임금명세서를 하나의 PDF로 병합
-        from PyPDF2 import PdfMerger
-        
-        merger = PdfMerger()
-        
-        for ledger_id in ledger_ids:
-            pdf_bytes = self.generate_pay_statement_pdf(ledger_id)
+        try:
+            from PyPDF2 import PdfMerger
             
-            if pdf_bytes:
-                # 바이트 데이터를 파일 객체로 변환
-                pdf_file = io.BytesIO(pdf_bytes)
-                merger.append(pdf_file)
-        
-        # 병합된 PDF 생성
-        output = io.BytesIO()
-        merger.write(output)
-        merger.close()
-        
-        # 버퍼의 내용을 바이트로 변환
-        pdf_bytes = output.getvalue()
-        output.close()
-        
-        return pdf_bytes
+            merger = PdfMerger()
+            
+            for ledger_id in ledger_ids:
+                pdf_bytes = self.generate_pay_statement_pdf(ledger_id)
+                
+                if pdf_bytes:
+                    # 바이트 데이터를 파일 객체로 변환
+                    pdf_file = io.BytesIO(pdf_bytes)
+                    merger.append(pdf_file)
+            
+            # 병합된 PDF 생성
+            output = io.BytesIO()
+            merger.write(output)
+            merger.close()
+            
+            # 버퍼의 내용을 바이트로 변환
+            pdf_bytes = output.getvalue()
+            output.close()
+            
+            return pdf_bytes
+        except Exception as e:
+            st.error(f"PDF 병합 중 오류 발생: {e}")
+            # 첫 번째 문서만 반환
+            if ledger_ids:
+                return self.generate_pay_statement_pdf(ledger_ids[0])
+            return None
     
     def generate_batch_pay_statements(self, year, month):
         """
