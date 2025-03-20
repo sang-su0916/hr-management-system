@@ -13,6 +13,48 @@ import io
 import base64
 import requests
 
+def download_korean_font():
+    """한글 폰트를 다운로드하고 등록하는 함수"""
+    # 폴더 만들기
+    font_folder = "my_special_fonts"
+    os.makedirs(font_folder, exist_ok=True)
+
+    # 폰트 파일 이름 정하기
+    font_file_path = os.path.join(font_folder, "my_korean_font.ttf")
+
+    # 폰트 다운로드할 주소들
+    font_download_links = [
+        "https://github.com/naver/nanumfont/raw/master/NanumFont/NanumGothic.ttf",
+        "https://raw.githubusercontent.com/naver/nanumfont/master/NanumFont/NanumGothic.ttf"
+    ]
+
+    # 폰트 다운로드 시도하기
+    for link in font_download_links:
+        try:
+            # 인터넷에서 폰트 파일 가져오기
+            response = requests.get(link, timeout=10)
+            
+            # 폰트 파일 잘 받아왔나 확인하기
+            if response.status_code == 200:
+                # 폰트 파일 저장하기
+                with open(font_file_path, "wb") as font_file:
+                    font_file.write(response.content)
+                
+                # PDF에 폰트 등록하기
+                pdfmetrics.registerFont(TTFont('MyKoreanFont', font_file_path))
+                
+                # 성공했다고 알려주기
+                st.success("한글 폰트를 성공적으로 다운로드했어요! 🎉")
+                return 'MyKoreanFont'
+        
+        except Exception as error:
+            # 혹시 문제가 생기면 알려주기
+            st.warning(f"폰트 다운로드에 문제가 생겼어요: {error}")
+
+    # 만약 모든 시도가 실패하면
+    st.error("죄송해요. 폰트를 다운로드할 수 없었어요. 😢")
+    return 'Helvetica'  # 기본 폰트 사용
+
 def render_employment_contract_form():
     """
     근로계약서 입력 폼 렌더링 함수
@@ -132,42 +174,7 @@ class EmploymentContract:
     
     def __init__(self):
         # 한글 폰트 등록
-        self._register_korean_fonts()
-    
-    def _register_korean_fonts(self):
-        """한글 폰트 등록 - 폰트를 직접 다운로드하여 사용"""
-        try:
-            # 폰트 저장 디렉토리 생성
-            font_dir = "fonts"
-            os.makedirs(font_dir, exist_ok=True)
-            
-            # NanumGothic 폰트 파일 경로
-            font_path = os.path.join(font_dir, "NanumGothic.ttf")
-            
-            # 폰트 파일이 없으면 다운로드
-            if not os.path.exists(font_path):
-                # 폰트 파일 URL
-                font_url = "https://raw.githubusercontent.com/googlefonts/nanum-gothic/main/fonts/NanumGothic-Regular.ttf"
-                
-                # 폰트 파일 다운로드
-                response = requests.get(font_url)
-                if response.status_code == 200:
-                    with open(font_path, "wb") as f:
-                        f.write(response.content)
-                    st.info("한글 폰트를 다운로드했습니다.")
-                else:
-                    raise Exception(f"폰트 다운로드 실패: 상태 코드 {response.status_code}")
-            
-            # 폰트 등록
-            pdfmetrics.registerFont(TTFont('NanumGothic', font_path))
-            self.font_name = 'NanumGothic'
-            st.success("한글 폰트가 성공적으로 등록되었습니다.")
-            
-        except Exception as e:
-            st.warning(f"폰트 등록 중 오류가 발생했습니다: {e}")
-            st.warning("한글이 제대로 표시되지 않을 수 있습니다.")
-            # 기본 폰트 사용
-            self.font_name = 'Helvetica'
+        self.font_name = download_korean_font()
     
     def generate_contract_pdf(self, contract_data):
         """
@@ -245,147 +252,3 @@ class EmploymentContract:
         """
         story.append(Paragraph(employee_info, styles['Korean']))
         story.append(Spacer(1, 5*mm))
-        
-        # 근로 계약 기간
-        story.append(Paragraph("3. 근로 계약 기간", styles['KoreanSubtitle']))
-        contract_period = f"""
-        - 근로계약기간: {contract_data.get('contract_start_date', '')} ~ {contract_data.get('contract_end_date', '기간의 정함이 없음')}
-        """
-        story.append(Paragraph(contract_period, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
-        
-        # 근무 장소 및 업무 내용
-        story.append(Paragraph("4. 근무 장소 및 업무 내용", styles['KoreanSubtitle']))
-        work_info = f"""
-        - 근무 장소: {contract_data.get('work_place', '')}
-        - 업무 내용: {contract_data.get('job_description', '')}
-        """
-        story.append(Paragraph(work_info, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
-        
-        # 근로 시간 및 휴게 시간
-        story.append(Paragraph("5. 근로 시간 및 휴게 시간", styles['KoreanSubtitle']))
-        work_time = f"""
-        - 근로시간: {contract_data.get('work_start_time', '')} ~ {contract_data.get('work_end_time', '')}
-        - 휴게시간: {contract_data.get('break_time', '')}
-        - 근무일/휴일: {contract_data.get('work_days', '')} / {contract_data.get('holidays', '')}
-        """
-        story.append(Paragraph(work_time, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
-        
-        # 임금
-        story.append(Paragraph("6. 임금", styles['KoreanSubtitle']))
-        salary_info = f"""
-        - 기본급: {contract_data.get('base_salary', '')}원
-        - 상여금: {contract_data.get('bonus', '')}
-        - 기타 수당: {contract_data.get('other_allowances', '')}
-        - 임금 지급일: 매월 {contract_data.get('payment_day', '')}일
-        - 지급 방법: {contract_data.get('payment_method', '근로자 명의 예금통장에 입금')}
-        """
-        story.append(Paragraph(salary_info, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
-        
-        # 사회보험 적용
-        story.append(Paragraph("7. 사회보험 적용 여부", styles['KoreanSubtitle']))
-        insurance_info = f"""
-        - 고용보험: {'적용' if contract_data.get('employment_insurance', True) else '미적용'}
-        - 산재보험: {'적용' if contract_data.get('industrial_accident_insurance', True) else '미적용'}
-        - 국민연금: {'적용' if contract_data.get('national_pension', True) else '미적용'}
-        - 건강보험: {'적용' if contract_data.get('health_insurance', True) else '미적용'}
-        """
-        story.append(Paragraph(insurance_info, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
-        
-        # 휴가
-        story.append(Paragraph("8. 휴가", styles['KoreanSubtitle']))
-        vacation_info = f"""
-        - 연차유급휴가: 근로기준법에 따라 부여
-        - 경조사휴가: 회사 규정에 따라 부여
-        """
-        story.append(Paragraph(vacation_info, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
-        
-        # 기타
-        story.append(Paragraph("9. 기타", styles['KoreanSubtitle']))
-        other_info = f"""
-        - 이 계약에 정함이 없는 사항은 근로기준법 및 회사 취업규칙에 따릅니다.
-        - {contract_data.get('other_terms', '')}
-        """
-        story.append(Paragraph(other_info, styles['Korean']))
-        story.append(Spacer(1, 10*mm))
-        
-        # 서명
-        today = datetime.date.today().strftime("%Y년 %m월 %d일")
-        signature = f"""
-        {today}
-        
-        (사업주) 주소: {contract_data.get('company_address', '')}
-                성명: {contract_data.get('representative', '')} (서명 또는 인)
-                
-        (근로자) 주소: {contract_data.get('employee_address', '')}
-                성명: {contract_data.get('employee_name', '')} (서명 또는 인)
-        """
-        story.append(Paragraph(signature, styles['Korean']))
-        
-        # PDF 생성
-        doc.build(story)
-        
-        # 버퍼의 내용을 바이트로 변환
-        pdf_bytes = buffer.getvalue()
-        buffer.close()
-        
-        return pdf_bytes
-    
-    def get_contract_template(self):
-        """
-        근로계약서 기본 템플릿 데이터 반환
-        
-        Returns:
-            dict: 근로계약서 기본 템플릿 데이터
-        """
-        today = datetime.date.today()
-        
-        return {
-            # 사업주 정보
-            "company_name": "",
-            "business_number": "",
-            "company_address": "",
-            "representative": "",
-            
-            # 근로자 정보
-            "employee_name": "",
-            "employee_id_number": "",
-            "employee_address": "",
-            "employee_phone": "",
-            
-            # 근로 계약 기간
-            "contract_start_date": today.strftime("%Y-%m-%d"),
-            "contract_end_date": "기간의 정함이 없음",
-            
-            # 근무 장소 및 업무 내용
-            "work_place": "",
-            "job_description": "",
-            
-            # 근로 시간 및 휴게 시간
-            "work_start_time": "09:00",
-            "work_end_time": "18:00",
-            "break_time": "12:00~13:00",
-            "work_days": "월~금",
-            "holidays": "토, 일, 공휴일",
-            
-            # 임금
-            "base_salary": "",
-            "bonus": "없음",
-            "other_allowances": "없음",
-            "payment_day": "25",
-            "payment_method": "근로자 명의 예금통장에 입금",
-            
-            # 사회보험 적용 여부
-            "employment_insurance": True,
-            "industrial_accident_insurance": True,
-            "national_pension": True,
-            "health_insurance": True,
-            
-            # 기타
-            "other_terms": ""
-        }
