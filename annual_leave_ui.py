@@ -5,11 +5,8 @@ import datetime
 import sys
 import os
 
-# 상위 디렉토리 경로 추가
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# 연차휴가 계산기 클래스 임포트
-from annual_leave.annual_leave_calculator import AnnualLeaveCalculator
+# 연차휴가 계산기 클래스 임포트 (수정됨)
+from annual_leave_calculator import AnnualLeaveCalculator
 
 def render_annual_leave_calculator():
     """
