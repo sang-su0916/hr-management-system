@@ -1,15 +1,6 @@
 import streamlit as st
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT, TA_RIGHT
 import os
 import datetime
-import io
 import base64
 import requests
 
@@ -111,230 +102,240 @@ def render_employment_contract_form():
         # 근로계약서 생성
         try:
             with st.spinner("근로계약서를 생성 중입니다..."):
-                pdf_bytes = contract.generate_contract_pdf(st.session_state.contract_data)
+                html_content = contract.generate_contract_html(st.session_state.contract_data)
                 
-                # PDF를 base64로 인코딩하여 다운로드 링크 생성
-                b64 = base64.b64encode(pdf_bytes).decode()
-                download_link = f'<a href="data:application/pdf;base64,{b64}" download="근로계약서_{st.session_state.contract_data["employee_name"]}.pdf">근로계약서 다운로드</a>'
+                # HTML을 base64로 인코딩하여 다운로드 링크 생성
+                b64 = base64.b64encode(html_content.encode()).decode()
+                download_link = f'<a href="data:text/html;base64,{b64}" download="근로계약서_{st.session_state.contract_data["employee_name"]}.html">근로계약서 다운로드</a>'
                 
                 st.success("근로계약서가 성공적으로 생성되었습니다.")
                 st.markdown(download_link, unsafe_allow_html=True)
+                
+                # 생성된 HTML 미리보기 표시
+                st.subheader("근로계약서 미리보기")
+                st.components.v1.html(html_content, height=600, scrolling=True)
         except Exception as e:
             st.error(f"근로계약서 생성 중 오류가 발생했습니다: {e}")
-            st.info("네트워크 연결 상태를 확인하고 다시 시도해 주세요.")
+            st.info("다시 시도해 주세요.")
 
 class EmploymentContract:
     """
     근로계약서 생성 클래스
     
-    근로계약서 템플릿을 생성하고 PDF로 변환하는 기능을 제공합니다.
+    근로계약서 템플릿을 생성하고 HTML로 변환하는 기능을 제공합니다.
     """
     
     def __init__(self):
-        # 한글 폰트 등록
-        self._register_korean_fonts()
+        pass
     
-    def _register_korean_fonts(self):
-        """한글 폰트 등록 - 폰트를 직접 다운로드하여 사용"""
-        try:
-            # 폰트 저장 디렉토리 생성
-            font_dir = "fonts"
-            os.makedirs(font_dir, exist_ok=True)
-            
-            # NanumGothic 폰트 파일 경로
-            font_path = os.path.join(font_dir, "NanumGothic.ttf")
-            
-            # 폰트 파일이 없으면 다운로드
-            if not os.path.exists(font_path):
-                # 폰트 파일 URL
-                font_url = "https://raw.githubusercontent.com/googlefonts/nanum-gothic/main/fonts/NanumGothic-Regular.ttf"
-                
-                # 폰트 파일 다운로드
-                response = requests.get(font_url)
-                if response.status_code == 200:
-                    with open(font_path, "wb") as f:
-                        f.write(response.content)
-                    st.info("한글 폰트를 다운로드했습니다.")
-                else:
-                    raise Exception(f"폰트 다운로드 실패: 상태 코드 {response.status_code}")
-            
-            # 폰트 등록
-            pdfmetrics.registerFont(TTFont('NanumGothic', font_path))
-            self.font_name = 'NanumGothic'
-            st.success("한글 폰트가 성공적으로 등록되었습니다.")
-            
-        except Exception as e:
-            st.warning(f"폰트 등록 중 오류가 발생했습니다: {e}")
-            st.warning("한글이 제대로 표시되지 않을 수 있습니다.")
-            # 기본 폰트 사용
-            self.font_name = 'Helvetica'
-    
-    def generate_contract_pdf(self, contract_data):
+    def generate_contract_html(self, contract_data):
         """
-        근로계약서 PDF 생성
+        근로계약서 HTML 생성
         
         Args:
             contract_data (dict): 근로계약서 데이터
             
         Returns:
-            bytes: PDF 파일 바이트 데이터
+            str: HTML 형식의 근로계약서
         """
-        buffer = io.BytesIO()
-        
-        # PDF 문서 생성
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=A4,
-            rightMargin=20*mm,
-            leftMargin=20*mm,
-            topMargin=20*mm,
-            bottomMargin=20*mm
-        )
-        
-        # 스타일 설정
-        styles = getSampleStyleSheet()
-        styles.add(ParagraphStyle(
-            name='Korean',
-            fontName=self.font_name,
-            fontSize=10,
-            leading=14,
-            alignment=TA_JUSTIFY
-        ))
-        styles.add(ParagraphStyle(
-            name='KoreanTitle',
-            fontName=self.font_name,
-            fontSize=16,
-            leading=20,
-            alignment=TA_CENTER,
-            spaceAfter=10
-        ))
-        styles.add(ParagraphStyle(
-            name='KoreanSubtitle',
-            fontName=self.font_name,
-            fontSize=12,
-            leading=16,
-            alignment=TA_LEFT,
-            spaceAfter=6
-        ))
-        
-        # 문서 내용
-        story = []
-        
-        # 제목
-        story.append(Paragraph("근 로 계 약 서", styles['KoreanTitle']))
-        story.append(Spacer(1, 10*mm))
-        
-        # 사업주 정보
-        story.append(Paragraph("1. 사업주", styles['KoreanSubtitle']))
-        employer_info = f"""
-        - 사업체명: {contract_data.get('company_name', '')}
-        - 사업자등록번호: {contract_data.get('business_number', '')}
-        - 주소: {contract_data.get('company_address', '')}
-        - 대표자: {contract_data.get('representative', '')}
+        # CSS 스타일 정의
+        css_style = """
+        <style>
+            body {
+                font-family: 'Malgun Gothic', 'Gulim', sans-serif;
+                line-height: 1.6;
+                margin: 40px;
+                color: #333;
+            }
+            h1 {
+                text-align: center;
+                font-size: 24px;
+                margin-bottom: 30px;
+            }
+            h2 {
+                font-size: 18px;
+                margin-top: 20px;
+                margin-bottom: 10px;
+                border-bottom: 1px solid #ccc;
+                padding-bottom: 5px;
+            }
+            .contract-section {
+                margin-bottom: 20px;
+            }
+            .signature {
+                margin-top: 40px;
+                text-align: center;
+            }
+            .signature-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }
+            .signature-table td {
+                padding: 10px;
+                vertical-align: top;
+            }
+            ul {
+                list-style-type: none;
+                padding-left: 0;
+            }
+            li {
+                margin-bottom: 8px;
+                padding-left: 20px;
+                position: relative;
+            }
+            li:before {
+                content: "-";
+                position: absolute;
+                left: 0;
+            }
+            .print-button {
+                text-align: center;
+                margin: 20px;
+            }
+            @media print {
+                .print-button {
+                    display: none;
+                }
+                body {
+                    margin: 0;
+                    padding: 20px;
+                }
+            }
+        </style>
         """
-        story.append(Paragraph(employer_info, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
         
-        # 근로자 정보
-        story.append(Paragraph("2. 근로자", styles['KoreanSubtitle']))
-        employee_info = f"""
-        - 성명: {contract_data.get('employee_name', '')}
-        - 주민등록번호: {contract_data.get('employee_id_number', '')}
-        - 주소: {contract_data.get('employee_address', '')}
-        - 연락처: {contract_data.get('employee_phone', '')}
+        # 인쇄 기능 JavaScript
+        print_script = """
+        <script>
+            function printContract() {
+                window.print();
+            }
+        </script>
         """
-        story.append(Paragraph(employee_info, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
         
-        # 근로 계약 기간
-        story.append(Paragraph("3. 근로 계약 기간", styles['KoreanSubtitle']))
-        contract_period = f"""
-        - 근로계약기간: {contract_data.get('contract_start_date', '')} ~ {contract_data.get('contract_end_date', '기간의 정함이 없음')}
-        """
-        story.append(Paragraph(contract_period, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
-        
-        # 근무 장소 및 업무 내용
-        story.append(Paragraph("4. 근무 장소 및 업무 내용", styles['KoreanSubtitle']))
-        work_info = f"""
-        - 근무 장소: {contract_data.get('work_place', '')}
-        - 업무 내용: {contract_data.get('job_description', '')}
-        """
-        story.append(Paragraph(work_info, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
-        
-        # 근로 시간 및 휴게 시간
-        story.append(Paragraph("5. 근로 시간 및 휴게 시간", styles['KoreanSubtitle']))
-        work_time = f"""
-        - 근로시간: {contract_data.get('work_start_time', '')} ~ {contract_data.get('work_end_time', '')}
-        - 휴게시간: {contract_data.get('break_time', '')}
-        - 근무일/휴일: {contract_data.get('work_days', '')} / {contract_data.get('holidays', '')}
-        """
-        story.append(Paragraph(work_time, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
-        
-        # 임금
-        story.append(Paragraph("6. 임금", styles['KoreanSubtitle']))
-        salary_info = f"""
-        - 기본급: {contract_data.get('base_salary', '')}원
-        - 상여금: {contract_data.get('bonus', '')}
-        - 기타 수당: {contract_data.get('other_allowances', '')}
-        - 임금 지급일: 매월 {contract_data.get('payment_day', '')}일
-        - 지급 방법: {contract_data.get('payment_method', '근로자 명의 예금통장에 입금')}
-        """
-        story.append(Paragraph(salary_info, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
-        
-        # 사회보험 적용
-        story.append(Paragraph("7. 사회보험 적용 여부", styles['KoreanSubtitle']))
-        insurance_info = f"""
-        - 고용보험: {'적용' if contract_data.get('employment_insurance', True) else '미적용'}
-        - 산재보험: {'적용' if contract_data.get('industrial_accident_insurance', True) else '미적용'}
-        - 국민연금: {'적용' if contract_data.get('national_pension', True) else '미적용'}
-        - 건강보험: {'적용' if contract_data.get('health_insurance', True) else '미적용'}
-        """
-        story.append(Paragraph(insurance_info, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
-        
-        # 휴가
-        story.append(Paragraph("8. 휴가", styles['KoreanSubtitle']))
-        vacation_info = f"""
-        - 연차유급휴가: 근로기준법에 따라 부여
-        - 경조사휴가: 회사 규정에 따라 부여
-        """
-        story.append(Paragraph(vacation_info, styles['Korean']))
-        story.append(Spacer(1, 5*mm))
-        
-        # 기타
-        story.append(Paragraph("9. 기타", styles['KoreanSubtitle']))
-        other_info = f"""
-        - 이 계약에 정함이 없는 사항은 근로기준법 및 회사 취업규칙에 따릅니다.
-        - {contract_data.get('other_terms', '')}
-        """
-        story.append(Paragraph(other_info, styles['Korean']))
-        story.append(Spacer(1, 10*mm))
-        
-        # 서명
-        today = datetime.date.today().strftime("%Y년 %m월 %d일")
-        signature = f"""
-        {today}
-        
-        (사업주) 주소: {contract_data.get('company_address', '')}
-                성명: {contract_data.get('representative', '')} (서명 또는 인)
+        # HTML 문서 시작
+        html = f"""
+        <!DOCTYPE html>
+        <html lang="ko">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>근로계약서 - {contract_data.get('employee_name', '')}</title>
+            {css_style}
+            {print_script}
+        </head>
+        <body>
+            <div class="print-button">
+                <button onclick="printContract()">인쇄하기</button>
+            </div>
+            
+            <h1>근 로 계 약 서</h1>
+            
+            <div class="contract-section">
+                <h2>1. 사업주</h2>
+                <ul>
+                    <li>사업체명: {contract_data.get('company_name', '')}</li>
+                    <li>사업자등록번호: {contract_data.get('business_number', '')}</li>
+                    <li>주소: {contract_data.get('company_address', '')}</li>
+                    <li>대표자: {contract_data.get('representative', '')}</li>
+                </ul>
+            </div>
+            
+            <div class="contract-section">
+                <h2>2. 근로자</h2>
+                <ul>
+                    <li>성명: {contract_data.get('employee_name', '')}</li>
+                    <li>주민등록번호: {contract_data.get('employee_id_number', '')}</li>
+                    <li>주소: {contract_data.get('employee_address', '')}</li>
+                    <li>연락처: {contract_data.get('employee_phone', '')}</li>
+                </ul>
+            </div>
+            
+            <div class="contract-section">
+                <h2>3. 근로 계약 기간</h2>
+                <ul>
+                    <li>근로계약기간: {contract_data.get('contract_start_date', '')} ~ {contract_data.get('contract_end_date', '기간의 정함이 없음')}</li>
+                </ul>
+            </div>
+            
+            <div class="contract-section">
+                <h2>4. 근무 장소 및 업무 내용</h2>
+                <ul>
+                    <li>근무 장소: {contract_data.get('work_place', '')}</li>
+                    <li>업무 내용: {contract_data.get('job_description', '')}</li>
+                </ul>
+            </div>
+            
+            <div class="contract-section">
+                <h2>5. 근로 시간 및 휴게 시간</h2>
+                <ul>
+                    <li>근로시간: {contract_data.get('work_start_time', '')} ~ {contract_data.get('work_end_time', '')}</li>
+                    <li>휴게시간: {contract_data.get('break_time', '')}</li>
+                    <li>근무일/휴일: {contract_data.get('work_days', '')} / {contract_data.get('holidays', '')}</li>
+                </ul>
+            </div>
+            
+            <div class="contract-section">
+                <h2>6. 임금</h2>
+                <ul>
+                    <li>기본급: {contract_data.get('base_salary', '')}원</li>
+                    <li>상여금: {contract_data.get('bonus', '')}</li>
+                    <li>기타 수당: {contract_data.get('other_allowances', '')}</li>
+                    <li>임금 지급일: 매월 {contract_data.get('payment_day', '')}일</li>
+                    <li>지급 방법: {contract_data.get('payment_method', '근로자 명의 예금통장에 입금')}</li>
+                </ul>
+            </div>
+            
+            <div class="contract-section">
+                <h2>7. 사회보험 적용 여부</h2>
+                <ul>
+                    <li>고용보험: {'적용' if contract_data.get('employment_insurance', True) else '미적용'}</li>
+                    <li>산재보험: {'적용' if contract_data.get('industrial_accident_insurance', True) else '미적용'}</li>
+                    <li>국민연금: {'적용' if contract_data.get('national_pension', True) else '미적용'}</li>
+                    <li>건강보험: {'적용' if contract_data.get('health_insurance', True) else '미적용'}</li>
+                </ul>
+            </div>
+            
+            <div class="contract-section">
+                <h2>8. 휴가</h2>
+                <ul>
+                    <li>연차유급휴가: 근로기준법에 따라 부여</li>
+                    <li>경조사휴가: 회사 규정에 따라 부여</li>
+                </ul>
+            </div>
+            
+            <div class="contract-section">
+                <h2>9. 기타</h2>
+                <ul>
+                    <li>이 계약에 정함이 없는 사항은 근로기준법 및 회사 취업규칙에 따릅니다.</li>
+                    <li>{contract_data.get('other_terms', '')}</li>
+                </ul>
+            </div>
+            
+            <div class="signature">
+                {datetime.date.today().strftime("%Y년 %m월 %d일")}
                 
-        (근로자) 주소: {contract_data.get('employee_address', '')}
-                성명: {contract_data.get('employee_name', '')} (서명 또는 인)
+                <table class="signature-table">
+                    <tr>
+                        <td width="50%">
+                            <p><b>(사업주)</b></p>
+                            <p>주소: {contract_data.get('company_address', '')}</p>
+                            <p>성명: {contract_data.get('representative', '')} (서명 또는 인)</p>
+                        </td>
+                        <td width="50%">
+                            <p><b>(근로자)</b></p>
+                            <p>주소: {contract_data.get('employee_address', '')}</p>
+                            <p>성명: {contract_data.get('employee_name', '')} (서명 또는 인)</p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </body>
+        </html>
         """
-        story.append(Paragraph(signature, styles['Korean']))
         
-        # PDF 생성
-        doc.build(story)
-        
-        # 버퍼의 내용을 바이트로 변환
-        pdf_bytes = buffer.getvalue()
-        buffer.close()
-        
-        return pdf_bytes
+        return html
     
     def get_contract_template(self):
         """
