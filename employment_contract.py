@@ -26,30 +26,26 @@ def render_employment_contract_form():
         st.session_state.contract_data = contract.get_contract_template()
     
     # 폼 생성
-    with st.form(key="employment_contract_form"):
+    with st.form("employment_contract_form"):
         st.subheader("사업주 정보")
         col1, col2 = st.columns(2)
         with col1:
             st.session_state.contract_data["company_name"] = st.text_input(
                 "사업체명",
-                value=st.session_state.contract_data["company_name"],
-                key="company_name_input"
+                value=st.session_state.contract_data["company_name"]
             )
             st.session_state.contract_data["company_address"] = st.text_input(
                 "주소",
-                value=st.session_state.contract_data["company_address"],
-                key="company_address_input"
+                value=st.session_state.contract_data["company_address"]
             )
         with col2:
             st.session_state.contract_data["business_number"] = st.text_input(
                 "사업자등록번호",
-                value=st.session_state.contract_data["business_number"],
-                key="business_number_input"
+                value=st.session_state.contract_data["business_number"]
             )
             st.session_state.contract_data["representative"] = st.text_input(
                 "대표자",
-                value=st.session_state.contract_data["representative"],
-                key="representative_input"
+                value=st.session_state.contract_data["representative"]
             )
         
         st.subheader("근로자 정보")
@@ -57,24 +53,20 @@ def render_employment_contract_form():
         with col1:
             st.session_state.contract_data["employee_name"] = st.text_input(
                 "성명",
-                value=st.session_state.contract_data["employee_name"],
-                key="employee_name_input"
+                value=st.session_state.contract_data["employee_name"]
             )
             st.session_state.contract_data["employee_address"] = st.text_input(
                 "주소",
-                value=st.session_state.contract_data["employee_address"],
-                key="employee_address_input"
+                value=st.session_state.contract_data["employee_address"]
             )
         with col2:
             st.session_state.contract_data["employee_id_number"] = st.text_input(
                 "주민등록번호",
-                value=st.session_state.contract_data["employee_id_number"],
-                key="employee_id_number_input"
+                value=st.session_state.contract_data["employee_id_number"]
             )
             st.session_state.contract_data["employee_phone"] = st.text_input(
                 "연락처",
-                value=st.session_state.contract_data["employee_phone"],
-                key="employee_phone_input"
+                value=st.session_state.contract_data["employee_phone"]
             )
         
         st.subheader("근로 계약 기간")
@@ -83,14 +75,12 @@ def render_employment_contract_form():
             st.session_state.contract_data["contract_start_date"] = st.date_input(
                 "계약 시작일",
                 value=datetime.datetime.strptime(st.session_state.contract_data["contract_start_date"], "%Y-%m-%d") if isinstance(st.session_state.contract_data["contract_start_date"], str) else st.session_state.contract_data["contract_start_date"],
-                format="YYYY-MM-DD",
-                key="contract_start_date_input"
+                format="YYYY-MM-DD"
             ).strftime("%Y-%m-%d")
         with col2:
             is_indefinite = st.checkbox(
                 "기간의 정함이 없음", 
-                value=st.session_state.contract_data["contract_end_date"] == "기간의 정함이 없음",
-                key="is_indefinite_checkbox"
+                value=st.session_state.contract_data["contract_end_date"] == "기간의 정함이 없음"
             )
             if is_indefinite:
                 st.session_state.contract_data["contract_end_date"] = "기간의 정함이 없음"
@@ -98,8 +88,7 @@ def render_employment_contract_form():
                 st.session_state.contract_data["contract_end_date"] = st.date_input(
                     "계약 종료일",
                     value=datetime.datetime.strptime(st.session_state.contract_data["contract_start_date"], "%Y-%m-%d") + datetime.timedelta(days=365) if st.session_state.contract_data["contract_end_date"] == "기간의 정함이 없음" else datetime.datetime.strptime(st.session_state.contract_data["contract_end_date"], "%Y-%m-%d"),
-                    format="YYYY-MM-DD",
-                    key="contract_end_date_input"
+                    format="YYYY-MM-DD"
                 ).strftime("%Y-%m-%d")
         
         st.subheader("근무 장소 및 업무 내용")
@@ -107,14 +96,12 @@ def render_employment_contract_form():
         with col1:
             st.session_state.contract_data["work_place"] = st.text_input(
                 "근무 장소",
-                value=st.session_state.contract_data["work_place"],
-                key="work_place_input"
+                value=st.session_state.contract_data["work_place"]
             )
         with col2:
             st.session_state.contract_data["job_description"] = st.text_input(
                 "업무 내용",
-                value=st.session_state.contract_data["job_description"],
-                key="job_description_input"
+                value=st.session_state.contract_data["job_description"]
             )
         
         st.subheader("근로 시간 및 휴게 시간")
@@ -122,30 +109,25 @@ def render_employment_contract_form():
         with col1:
             st.session_state.contract_data["work_start_time"] = st.text_input(
                 "근로 시작 시간",
-                value=st.session_state.contract_data["work_start_time"],
-                key="work_start_time_input"
+                value=st.session_state.contract_data["work_start_time"]
             )
             st.session_state.contract_data["work_days"] = st.text_input(
                 "근무일",
-                value=st.session_state.contract_data["work_days"],
-                key="work_days_input"
+                value=st.session_state.contract_data["work_days"]
             )
         with col2:
             st.session_state.contract_data["work_end_time"] = st.text_input(
                 "근로 종료 시간",
-                value=st.session_state.contract_data["work_end_time"],
-                key="work_end_time_input"
+                value=st.session_state.contract_data["work_end_time"]
             )
             st.session_state.contract_data["holidays"] = st.text_input(
                 "휴일",
-                value=st.session_state.contract_data["holidays"],
-                key="holidays_input"
+                value=st.session_state.contract_data["holidays"]
             )
         with col3:
             st.session_state.contract_data["break_time"] = st.text_input(
                 "휴게 시간",
-                value=st.session_state.contract_data["break_time"],
-                key="break_time_input"
+                value=st.session_state.contract_data["break_time"]
             )
         
         st.subheader("임금")
@@ -153,24 +135,20 @@ def render_employment_contract_form():
         with col1:
             st.session_state.contract_data["base_salary"] = st.text_input(
                 "기본급 (원)",
-                value=st.session_state.contract_data["base_salary"],
-                key="base_salary_input"
+                value=st.session_state.contract_data["base_salary"]
             )
             st.session_state.contract_data["payment_day"] = st.text_input(
                 "임금 지급일 (매월 O일)",
-                value=st.session_state.contract_data["payment_day"],
-                key="payment_day_input"
+                value=st.session_state.contract_data["payment_day"]
             )
         with col2:
             st.session_state.contract_data["bonus"] = st.text_input(
                 "상여금",
-                value=st.session_state.contract_data["bonus"],
-                key="bonus_input"
+                value=st.session_state.contract_data["bonus"]
             )
             st.session_state.contract_data["other_allowances"] = st.text_input(
                 "기타 수당",
-                value=st.session_state.contract_data["other_allowances"],
-                key="other_allowances_input"
+                value=st.session_state.contract_data["other_allowances"]
             )
         
         st.subheader("사회보험 적용 여부")
@@ -178,35 +156,31 @@ def render_employment_contract_form():
         with col1:
             st.session_state.contract_data["employment_insurance"] = st.checkbox(
                 "고용보험",
-                value=st.session_state.contract_data["employment_insurance"],
-                key="employment_insurance_checkbox"
+                value=st.session_state.contract_data["employment_insurance"]
             )
             st.session_state.contract_data["national_pension"] = st.checkbox(
                 "국민연금",
-                value=st.session_state.contract_data["national_pension"],
-                key="national_pension_checkbox"
+                value=st.session_state.contract_data["national_pension"]
             )
         with col2:
             st.session_state.contract_data["industrial_accident_insurance"] = st.checkbox(
                 "산재보험",
-                value=st.session_state.contract_data["industrial_accident_insurance"],
-                key="industrial_accident_insurance_checkbox"
+                value=st.session_state.contract_data["industrial_accident_insurance"]
             )
             st.session_state.contract_data["health_insurance"] = st.checkbox(
                 "건강보험",
-                value=st.session_state.contract_data["health_insurance"],
-                key="health_insurance_checkbox"
+                value=st.session_state.contract_data["health_insurance"]
             )
         
         st.subheader("기타 사항")
         st.session_state.contract_data["other_terms"] = st.text_area(
             "기타 계약 사항",
             value=st.session_state.contract_data["other_terms"],
-            height=100,
-            key="other_terms_textarea"
+            height=100
         )
         
-        submitted = st.form_submit_button("근로계약서 생성", key="contract_submit_button")
+        # 제출 버튼 - key 매개변수 제거
+        submitted = st.form_submit_button("근로계약서 생성")
         
         if submitted:
             # 근로계약서 생성
