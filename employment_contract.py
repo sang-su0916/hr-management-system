@@ -11,6 +11,7 @@ import os
 import datetime
 import io
 import base64
+import requests
 
 def render_employment_contract_form():
     """
@@ -108,14 +109,19 @@ def render_employment_contract_form():
             st.session_state.contract_data[key] = form_data[key]
         
         # 근로계약서 생성
-        pdf_bytes = contract.generate_contract_pdf(st.session_state.contract_data)
-        
-        # PDF를 base64로 인코딩하여 다운로드 링크 생성
-        b64 = base64.b64encode(pdf_bytes).decode()
-        download_link = f'<a href="data:application/pdf;base64,{b64}" download="근로계약서_{st.session_state.contract_data["employee_name"]}.pdf">근로계약서 다운로드</a>'
-        
-        st.success("근로계약서가 성공적으로 생성되었습니다.")
-        st.markdown(download_link, unsafe_allow_html=True)
+        try:
+            with st.spinner("근로계약서를 생성 중입니다..."):
+                pdf_bytes = contract.generate_contract_pdf(st.session_state.contract_data)
+                
+                # PDF를 base64로 인코딩하여 다운로드 링크 생성
+                b64 = base64.b64encode(pdf_bytes).decode()
+                download_link = f'<a href="data:application/pdf;base64,{b64}" download="근로계약서_{st.session_state.contract_data["employee_name"]}.pdf">근로계약서 다운로드</a>'
+                
+                st.success("근로계약서가 성공적으로 생성되었습니다.")
+                st.markdown(download_link, unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"근로계약서 생성 중 오류가 발생했습니다: {e}")
+            st.info("네트워크 연결 상태를 확인하고 다시 시도해 주세요.")
 
 class EmploymentContract:
     """
@@ -125,39 +131,43 @@ class EmploymentContract:
     """
     
     def __init__(self):
-        # 한글 폰트 등록 (기본 폰트가 한글을 지원하지 않을 수 있음)
+        # 한글 폰트 등록
         self._register_korean_fonts()
     
     def _register_korean_fonts(self):
-        """한글 폰트 등록"""
-        # 시스템에 설치된 CJK 폰트 검색
+        """한글 폰트 등록 - 폰트를 직접 다운로드하여 사용"""
         try:
-            # 기본 폰트 목록
-            font_paths = [
-                "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
-                "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
-                "/usr/share/fonts/truetype/unbatang/UnBatang.ttf",
-                "/usr/share/fonts/open-sans/OpenSans-Regular.ttf"
-            ]
+            # 폰트 저장 디렉토리 생성
+            font_dir = "fonts"
+            os.makedirs(font_dir, exist_ok=True)
             
-            # 폰트 찾기 및 등록
-            font_found = False
-            for font_path in font_paths:
-                if os.path.exists(font_path):
-                    font_name = os.path.basename(font_path).split('.')[0]
-                    pdfmetrics.registerFont(TTFont(font_name, font_path))
-                    font_found = True
-                    break
+            # NanumGothic 폰트 파일 경로
+            font_path = os.path.join(font_dir, "NanumGothic.ttf")
             
-            # 폰트를 찾지 못한 경우 기본 폰트 사용
-            if not font_found:
-                # Helvetica는 ReportLab에 기본으로 내장되어 있음
-                # 한글이 제대로 표시되지 않을 수 있지만 오류는 방지
-                pass
+            # 폰트 파일이 없으면 다운로드
+            if not os.path.exists(font_path):
+                # 폰트 파일 URL
+                font_url = "https://raw.githubusercontent.com/googlefonts/nanum-gothic/main/fonts/NanumGothic-Regular.ttf"
+                
+                # 폰트 파일 다운로드
+                response = requests.get(font_url)
+                if response.status_code == 200:
+                    with open(font_path, "wb") as f:
+                        f.write(response.content)
+                    st.info("한글 폰트를 다운로드했습니다.")
+                else:
+                    raise Exception(f"폰트 다운로드 실패: 상태 코드 {response.status_code}")
+            
+            # 폰트 등록
+            pdfmetrics.registerFont(TTFont('NanumGothic', font_path))
+            self.font_name = 'NanumGothic'
+            st.success("한글 폰트가 성공적으로 등록되었습니다.")
+            
         except Exception as e:
             st.warning(f"폰트 등록 중 오류가 발생했습니다: {e}")
             st.warning("한글이 제대로 표시되지 않을 수 있습니다.")
+            # 기본 폰트 사용
+            self.font_name = 'Helvetica'
     
     def generate_contract_pdf(self, contract_data):
         """
@@ -185,14 +195,14 @@ class EmploymentContract:
         styles = getSampleStyleSheet()
         styles.add(ParagraphStyle(
             name='Korean',
-            fontName='Helvetica',  # 기본 폰트 사용
+            fontName=self.font_name,
             fontSize=10,
             leading=14,
             alignment=TA_JUSTIFY
         ))
         styles.add(ParagraphStyle(
             name='KoreanTitle',
-            fontName='Helvetica',  # 기본 폰트 사용
+            fontName=self.font_name,
             fontSize=16,
             leading=20,
             alignment=TA_CENTER,
@@ -200,7 +210,7 @@ class EmploymentContract:
         ))
         styles.add(ParagraphStyle(
             name='KoreanSubtitle',
-            fontName='Helvetica',  # 기본 폰트 사용
+            fontName=self.font_name,
             fontSize=12,
             leading=16,
             alignment=TA_LEFT,
