@@ -1,13 +1,11 @@
-streamlit==1.31.0
-pandas==2.1.0
-numpy==1.26.0
-plotly==5.18.0
-fpdf2==2.4.6  # fpdf 대신 fpdf2 사용
-pillow==10.0.0
-openpyxl==3.1.2
-xlsxwriter==3.1.2
-reportlab==4.0.4
-python-docx==0.8.11  # 버전 수정
-streamlit-option-menu==0.3.6
-streamlit-calendar==0.1.0
-streamlit-extras==0.3.0
+streamlit>=1.25.0
+pandas>=2.0.0
+numpy>=1.24.0
+plotly>=5.15.0
+fpdf2>=2.4.0
+pillow>=9.5.0
+openpyxl>=3.1.0
+xlsxwriter>=3.0.0
+reportlab>=4.0.0
+python-docx>=0.8.10
+streamlit-option-menu>=0.3.0
