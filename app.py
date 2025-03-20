@@ -8,11 +8,11 @@ import base64
 # 모듈 경로 추가
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# 각 모듈 임포트
-from annual_leave.annual_leave_ui import render_annual_leave_calculator
-from employment_contract.employment_contract import render_employment_contract_form
-from payroll_ledger.payroll_ledger import render_payroll_ledger_ui
-from pay_statement.pay_statement import render_pay_statement_ui
+# 각 모듈 임포트 (파일 구조에 맞게 수정됨)
+from annual_leave_ui import render_annual_leave_calculator
+from employment_contract import render_employment_contract_form
+from payroll_ledger import render_payroll_ledger_ui
+from pay_statement import render_pay_statement_ui
 
 # 페이지 설정
 st.set_page_config(
@@ -239,8 +239,11 @@ def main():
     load_css()
     
     # 배경 이미지 설정
-    bg_image_path = create_background_image()
-    add_bg_from_local(bg_image_path)
+    try:
+        bg_image_path = create_background_image()
+        add_bg_from_local(bg_image_path)
+    except Exception as e:
+        st.warning(f"배경 이미지 생성 중 오류가 발생했습니다. 하지만 앱은 계속 작동합니다.")
     
     # 세션 상태 초기화
     if 'current_page' not in st.session_state:
